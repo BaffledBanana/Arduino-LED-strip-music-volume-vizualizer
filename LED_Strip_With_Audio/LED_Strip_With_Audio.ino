@@ -1,24 +1,24 @@
 #include <FastLED.h>
 
-const int led_count = 30; //max | bars for a max amplitude
+const int led_count = 30; //how many LEDs on the strip. Also max | bars for a max amplitude in debuging print
 const int rmsHistory = 4; //how many values of amplitude history to store
 
-int analogPin = A0;
+int analogPin = A0;//audio signal in pin
 int signalStrength;
-int upper = 20;
-int addaptiveUpper = true;
-int lower = 15;
-int addaptiveLower = false;
-int h = 0;
+int upper = 20;//upper ceiling of what is considered as max amplitude
+int addaptiveUpper = true; //recomended true
+int lower = 15;//lower floor of what is considered as min amplitude (for noise reduction)
+int addaptiveLower = false;//recomended false
+int h = 0; //tmp hue variable
 
-int rmsValues[rmsHistory];
-int rmsCounter = 0;
+int rmsValues[rmsHistory]; //rms data points
+int rmsCounter = 0; //tmp var to wait before making the calculation
 
-char levelStr[led_count];
+char levelStr[led_count];//string that holds the | debug. I've found that Serial.print('|') a bunch of times slows down the program at high amplitudes
 
 CRGB leds[led_count]; //its actually BRG
 
-//HSV used to easily make the leds slowly do a rainbow color effect
+//HSV used to easily make the leds slowly do a rainbow color effect or other effects, that are difficult with the RGB system
 struct HSV { //hue, saturation, value
   int h = 0; //0 - 359
   float s = 0; //0 - 1
@@ -30,7 +30,7 @@ struct HSV hsv;
 void setup() {
   Serial.begin(9600);
   signalStrength = analogRead(analogPin);
-  lower = signalStrength;
+  lower = signalStrength; //programm assumes no audio at the start, such that it can read the noise floor and get rid of it
   //set all rms value history to 0
   for(int i = 0; i < rmsHistory; i++){
     rmsValues[i] = 0;
@@ -41,15 +41,16 @@ void setup() {
 
   FastLED.addLeds<WS2812B, 12, RGB>(leds, led_count);
 
+  //set starting values for HSV. S and V = 1 seems to break the functionality
   hsv.h = SetH(289);
   hsv.s = SetS(0.9f);
   hsv.v = SetV(0.9f);
 
-  Clear();
+  Clear();//clears all LEDs to black
   for(int x =0; x < led_count; x++){
       leds[x] = HSVtoRGB(hsv);
   } 
-  FastLED.show();
+  FastLED.show();//doing it 3 times makes sure the color is set. sometimes the led strip wont light up from one call
   FastLED.show();
   FastLED.show();
 }
@@ -60,26 +61,27 @@ void loop() {
   
   FloorSignal();
 
-  //DebugSignal();
+  //DebugSignal(); //shows bunch of info in the serial monitor
 
   signalStrength = map(signalStrength, lower, upper, 0, led_count);
 
   /*Serial.print("Signal: ");
   Serial.print(signalStrength);*/
   //Serial.print(CalcRMS(signalStrength)); 
-  int level = CalcRMS(signalStrength);
-  PrintLevel(level);
-  //PrintLevel(signalStrength);
+  int level = CalcRMS(signalStrength); //calculates the RMS if possible
+  PrintLevel(level); //prints the | bars in serial monitor
+  //PrintLevel(signalStrength); //shows bunch of info in the serial monitor
 
+  //for strobe rainbow effect
   hsv.h = SetH(h);
   h++;
 
   Clear();
   for(int x =0; x < level; x++){
-      leds[x] = HSVtoRGB(hsv); //CRGB(255, 208, 0) purple
+      leds[x] = HSVtoRGB(hsv); //CRGB(255, 208, 0) purple in BRG
   } 
 
-  //DebugColor(HSVtoRGB(hsv), hsv);
+  //DebugColor(HSVtoRGB(hsv), hsv); //shows bunch of info in the serial monitor
 
   FastLED.show();
 }
@@ -218,7 +220,7 @@ CRGB HSVtoRGB(struct HSV hsv){
   rgb.g = (r+m)*255;
   rgb.b = (b+m)*255; */
 
-  return CRGB((int)((b+m)*255),(int)((r+m)*255),(int)((g+m)*255));
+  return CRGB((int)((b+m)*255),(int)((r+m)*255),(int)((g+m)*255)); //for BRG
 }
 
 
