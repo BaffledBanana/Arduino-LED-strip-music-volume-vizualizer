@@ -1,3 +1,7 @@
+/*
+Author: Rolands Laucis
+*/
+
 #include <FastLED.h>
 
 const int led_count = 30; //how many LEDs on the strip. Also max | bars for a max amplitude in debuging print
